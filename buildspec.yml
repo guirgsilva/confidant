@@ -5,7 +5,7 @@ phases:
     runtime-versions:
       python: 3.10
     commands:
-      # System updates and Python dependencies
+      # System updates and Py dependencies
       - echo "Updating system packages..."
       - yum update -y
       - yum install -y python3-pip python3-devel gcc
