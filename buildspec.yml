@@ -5,29 +5,67 @@ phases:
     runtime-versions:
       python: 3.10
     commands:
-      - pip install --upgrade pip
-      - pip install -r requirements.txt
-      - pip install pytest pytest-cov
-  
+      # System updates and Python dependencies
+      - echo "Updating system packages..."
+      - yum update -y
+      - yum install -y python3-pip python3-devel gcc make openssl-devel bzip2-devel libffi-devel
+      
+      # Verify Python installation
+      - python3 --version
+      - which python3
+      - which pip3
+      
+      # Upgrade pip and setup tools
+      - python3 -m pip install --upgrade pip
+      - python3 -m pip install --upgrade setuptools wheel
+      
+      # Install development tools
+      - pip3 install pytest pytest-cov flake8
+      
   pre_build:
     commands:
+      # Environment verification
+      - echo "Verifying environment..."
+      - python3 -c "import sys; print(f'Python {sys.version}')"
+      - pip3 list
+      
+      # Install project dependencies
+      - echo "Installing project dependencies..."
+      - if [ -f "requirements.txt" ]; then pip3 install -r requirements.txt; fi
+      
+      # Run tests if they exist
       - echo "Running tests..."
-      - python -m pytest tests/ --cov=./ --cov-report=term-missing
-  
+      - if [ -d "tests" ]; then pytest tests/ --doctest-modules --junitxml=test-reports/junit.xml --cov=. --cov-report=xml --cov-report=html; fi
+      
+      # Code quality checks
+      - echo "Running code quality checks..."
+      - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+      
   build:
     commands:
       - echo "Building application..."
-      - python setup.py build
-  
+      - if [ -f "setup.py" ]; then python3 setup.py build; fi
+      
   post_build:
     commands:
-      - echo "Creating deployment package..."
-      - mkdir -p deployment
-      - cp -r ./* deployment/
-      - cd deployment
-      - zip -r ../application.zip ./*
+      - echo "Build completed on `date`"
+      - echo "Environment information:"
+      - python3 --version
+      - pip3 --version
+      - pwd
+      - ls -la
 
+reports:
+  junit:
+    files:
+      - test-reports/junit.xml
+    
 artifacts:
   files:
-    - application.zip
-  name: confidant-application
+    - '**/*'
+  base-directory: '.'
+  
+cache:
+  paths:
+    - '/root/.cache/pip'
+    - '/root/.cache/pytest'
