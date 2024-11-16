@@ -3,32 +3,31 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      python: 3.10    # Removendo o .0 para usar a versão principal
+      python: 3.10
     commands:
-      - python --version
+      - echo "Atualizando o ambiente de construção..."
+      - apt-get update && apt-get install -y coreutils  # Para garantir que o comando 'cat' esteja disponível
+      - echo "Instalando dependências do projeto..."
       - pip install --upgrade pip
       - pip install virtualenv
-
   pre_build:
     commands:
+      - echo "Criando e ativando ambiente virtual..."
       - virtualenv venv
       - . venv/bin/activate
+      - echo "Instalando pacotes do requirements.txt..."
       - pip install -r requirements.txt
-
   build:
     commands:
-      - echo Build started on `date`
-      - python -m pytest tests/ || echo "No tests found or tests failed"
-
+      - echo "Iniciando a fase de construção..."
+      - python -m pytest tests/ || echo "Nenhum teste encontrado ou testes falharam"
   post_build:
     commands:
-      - echo Build completed on `date`
-
+      - echo "Construção concluída em $(date)"
 artifacts:
   files:
     - '**/*'
   base-directory: .
-
 cache:
   paths:
     - '/root/.cache/pip'
