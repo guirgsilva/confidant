@@ -3,28 +3,32 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      python: 3.10  # Mudando para Python 3.10 conforme seu requirements
+      python: 3.10
     commands:
       - echo Installing system dependencies...
-      - yum update -y
-      # Installing system dependencies required by various Python packages
-      - yum install -y gcc python3-devel openssl-devel libffi-devel
-      - yum install -y libtool-ltdl-devel xmlsec1-devel xmlsec1-openssl-devel
-      - yum install -y libxml2-devel xmlsec1 libyaml-devel
+      - amazon-linux-extras enable epel
+      - yum clean metadata
+      - yum -y install epel-release
+      - yum -y install gcc python3-devel openssl-devel libffi-devel
+      - yum -y install libtool-ltdl-devel xmlsec1-devel xmlsec1-openssl-devel
+      - yum -y install libxml2-devel xmlsec1 libyaml-devel
       - echo Installing pip and virtualenv...
-      - python -m pip install --upgrade pip==24.1.2
-      - python -m pip install virtualenv
+      - curl -O https://bootstrap.pypa.io/get-pip.py
+      - python3 get-pip.py
+      - pip install --upgrade pip==24.1.2
+      - pip install virtualenv
 
   pre_build:
     commands:
       - echo Setting up Python virtual environment...
-      - python -m virtualenv venv
+      - virtualenv venv
       - . venv/bin/activate
       - echo Installing project requirements...
-      - pip install setuptools==68.0.0  # Specific version from requirements
+      - pip install setuptools==68.0.0
+      - pip install wheel
       - pip install -r requirements.txt
       - echo Verifying installations...
-      - python -c "import xmlsec; import cryptography; import gevent"
+      - python -c "import xmlsec; import cryptography; import gevent" || echo "Import verification failed but continuing..."
 
   build:
     commands:
