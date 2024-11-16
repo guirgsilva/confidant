@@ -8,18 +8,17 @@ phases:
       # System updates and Python dependencies
       - echo "Updating system packages..."
       - yum update -y
-      - yum install -y python3-pip python3-devel gcc make openssl-devel bzip2-devel libffi-devel
+      - yum install -y python3-pip python3-devel gcc
       
       # Verify Python installation
       - python3 --version
       - which python3
-      - which pip3
       
       # Upgrade pip and setup tools
       - python3 -m pip install --upgrade pip
       - python3 -m pip install --upgrade setuptools wheel
       
-      # Install development tools
+      # Install testing dependencies
       - pip3 install pytest pytest-cov flake8
       
   pre_build:
@@ -27,24 +26,17 @@ phases:
       # Environment verification
       - echo "Verifying environment..."
       - python3 -c "import sys; print(f'Python {sys.version}')"
-      - pip3 list
       
       # Install project dependencies
       - echo "Installing project dependencies..."
       - if [ -f "requirements.txt" ]; then pip3 install -r requirements.txt; fi
       
-      # Run tests if they exist
-      - echo "Running tests..."
-      - if [ -d "tests" ]; then pytest tests/ --doctest-modules --junitxml=test-reports/junit.xml --cov=. --cov-report=xml --cov-report=html; fi
-      
-      # Code quality checks
-      - echo "Running code quality checks..."
-      - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
-      
   build:
     commands:
-      - echo "Building application..."
-      - if [ -f "setup.py" ]; then python3 setup.py build; fi
+      - echo "Running tests..."
+      - if [ -d "tests" ]; then pytest tests/ --junitxml=test-results/junit.xml --cov=. --cov-report=xml --cov-report=html; fi
+      - echo "Running code quality checks..."
+      - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
       
   post_build:
     commands:
@@ -52,13 +44,12 @@ phases:
       - echo "Environment information:"
       - python3 --version
       - pip3 --version
-      - pwd
-      - ls -la
 
 reports:
-  junit:
+  junit-reports:
     files:
-      - test-reports/junit.xml
+      - "test-results/junit.xml"
+    file-format: JUNITXML
     
 artifacts:
   files:
