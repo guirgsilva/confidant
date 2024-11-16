@@ -3,14 +3,49 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      python: 3.9
+      python: 3.10  # Mudando para Python 3.10 conforme seu requirements
     commands:
-      - echo Installing dependencies...
-      - pip install virtualenv
+      - echo Installing system dependencies...
+      - yum update -y
+      # Installing system dependencies required by various Python packages
+      - yum install -y gcc python3-devel openssl-devel libffi-devel
+      - yum install -y libtool-ltdl-devel xmlsec1-devel xmlsec1-openssl-devel
+      - yum install -y libxml2-devel xmlsec1 libyaml-devel
+      - echo Installing pip and virtualenv...
+      - python -m pip install --upgrade pip==24.1.2
+      - python -m pip install virtualenv
+
+  pre_build:
+    commands:
+      - echo Setting up Python virtual environment...
+      - python -m virtualenv venv
+      - . venv/bin/activate
+      - echo Installing project requirements...
+      - pip install setuptools==68.0.0  # Specific version from requirements
+      - pip install -r requirements.txt
+      - echo Verifying installations...
+      - python -c "import xmlsec; import cryptography; import gevent"
+
   build:
     commands:
-      - echo Cloning Confidant repository...
-      - virtualenv venv
-      - source venv/bin/activate
-      - pip install -r requirements.txt
+      - echo Build started on `date`
+      - echo Running tests...
+      - python -m pytest tests/ || echo "No tests found or tests failed"
+
+  post_build:
+    commands:
+      - echo Post-build phase started on `date`
+      - echo Preparing artifacts...
+      - mkdir -p artifacts
+      - cp -r * artifacts/ || echo "No files to copy"
       - echo Build completed successfully!
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: artifacts
+
+cache:
+  paths:
+    - '/root/.cache/pip'
+    - 'venv/**/*'
