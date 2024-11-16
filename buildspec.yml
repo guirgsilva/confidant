@@ -5,30 +5,29 @@ phases:
     runtime-versions:
       python: 3.10
     commands:
-      - echo "Atualizando o ambiente de construção..."
-      - apt-get update && apt-get install -y coreutils  # Para garantir que o comando 'cat' esteja disponível
-      - echo "Instalando dependências do projeto..."
       - pip install --upgrade pip
-      - pip install virtualenv
+      - pip install -r requirements.txt
+      - pip install pytest pytest-cov
+  
   pre_build:
     commands:
-      - echo "Criando e ativando ambiente virtual..."
-      - virtualenv venv
-      - . venv/bin/activate
-      - echo "Instalando pacotes do requirements.txt..."
-      - pip install -r requirements.txt
+      - echo "Running tests..."
+      - python -m pytest tests/ --cov=./ --cov-report=term-missing
+  
   build:
     commands:
-      - echo "Iniciando a fase de construção..."
-      - python -m pytest tests/ || echo "Nenhum teste encontrado ou testes falharam"
+      - echo "Building application..."
+      - python setup.py build
+  
   post_build:
     commands:
-      - echo "Construção concluída em $(date)"
+      - echo "Creating deployment package..."
+      - mkdir -p deployment
+      - cp -r ./* deployment/
+      - cd deployment
+      - zip -r ../application.zip ./*
+
 artifacts:
   files:
-    - '**/*'
-  base-directory: .
-cache:
-  paths:
-    - '/root/.cache/pip'
-    - 'venv/**/*'
+    - application.zip
+  name: confidant-application
