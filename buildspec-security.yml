@@ -37,10 +37,11 @@ reports:
 
 artifacts:
   files:
+    - '**/*'
     - security-report.json
     - safety-report.json
     - requirements-lock.txt
-  discard-paths: yes
+  discard-paths: no
 
 cache:
   paths:
