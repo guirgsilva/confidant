@@ -1,57 +1,40 @@
 #!/bin/bash
 
-# Function for logging
-log() {
-    echo “$1” >> /opt/confidant/deploy.log
-}
-
-# Cleanup function
-cleanup() {
-    log “Cleaning up processes...”
-    pkill -f “python3 app.py” || true
-}
-
-# Log the cleanup to be executed on exit
-trap cleanup EXIT
-
-# Move to the application directory
+# Move para o diretório da aplicação
 cd /opt/confidant
 
-# Clean up previous processes
-cleanup
+# Mata processos anteriores
+pkill -f "app.py" || true
 
-# Set up the Flask environment
+# Configura o ambiente
 export FLASK_APP=/opt/confidant/app.py
 export PYTHONPATH=/opt/confidant
 
-# Configuring the registers
+# Configura logs
 touch /opt/confidant/flask.log
-touch /opt/confidant/deploy.log
-chown ec2-user:ec2-user /opt/confidant/*.log
+chown ec2-user:ec2-user /opt/confidant/flask.log
 
-# Start the application
+# Inicia a aplicação
 nohup python3 app.py > /opt/confidant/flask.log 2>&1 &
 PID=$!
 
-# Wait for initialization
+# Aguarda inicialização
 sleep 5
 
-# Check if the process is running
+# Verifica status
 if ps -p $PID > /dev/null; then
-    log “Application started successfully with PID: $PID”
+    echo "Application started successfully with PID: $PID"
     
-    # Check if it is responding
     if curl -s http://localhost:80/health > /dev/null; then
-        log “The application is responding correctly”
-        # Close all file descriptors
-        exec 1>&- 2>&-
+        echo "Application is responding correctly"
         exit 0
     else
-        log “The application process is running but is not responding”
+        echo "Application process is running but not responding"
         kill $PID
         exit 1
-    fi else
+    fi
 else
-    log “Application failed to start”
+    echo "Application failed to start"
+    cat /opt/confidant/flask.log
     exit 1
 fi
