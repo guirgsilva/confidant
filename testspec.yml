@@ -6,15 +6,15 @@ phases:
       python: 3.8
     commands:
       - pip install pytest requests
-
+      
   pre_build:
     commands:
       - echo "Starting tests"
-
+      
   build:
     commands:
       - python -m pytest tests/test_health.py -v
-
+      
   post_build:
     commands:
       - echo "Tests completed"

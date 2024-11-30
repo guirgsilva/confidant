@@ -41,6 +41,7 @@ artifacts:
     - security-report.json
     - safety-report.json
     - requirements-lock.txt
+  base-directory: '.'
   discard-paths: no
 
 cache:
