@@ -1,0 +1,193 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Simple Grafana monitoring infrastructure using ECS Fargate'
+
+Parameters:
+  VPCId:
+    Type: String
+    Description: VPC ID where Grafana will be deployed
+  
+  PublicSubnet1:
+    Type: String
+    Description: Public subnet for Grafana container
+    
+  GrafanaAdminPassword:
+    Type: String
+    NoEcho: true
+    Description: Admin password for Grafana
+    MinLength: 8
+
+Resources:
+  # Security Groups
+  GrafanaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Grafana container
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  # ECS Cluster
+  GrafanaCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub ${AWS::StackName}-grafana-cluster
+      CapacityProviders:
+        - FARGATE
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+
+  # CloudWatch Log Group
+  GrafanaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/${AWS::StackName}-grafana
+      RetentionInDays: 7
+
+  # IAM Roles
+  GrafanaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: GrafanaLogsPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt GrafanaLogGroup.Arn
+
+  GrafanaTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: GrafanaCloudWatchAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudwatch:ListMetrics
+                  - cloudwatch:GetMetricStatistics
+                  - cloudwatch:GetMetricData
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:GetLogEvents
+                  - logs:StartQuery
+                  - logs:StopQuery
+                  - logs:GetQueryResults
+                  - logs:GetLogGroupFields
+                  - logs:GetLogRecord
+                Resource: '*'
+
+  # Task Definition
+  GrafanaTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: grafana
+      RequiresCompatibilities: 
+        - FARGATE
+      NetworkMode: awsvpc
+      Cpu: '512'
+      Memory: '1024'
+      ExecutionRoleArn: !GetAtt GrafanaExecutionRole.Arn
+      TaskRoleArn: !GetAtt GrafanaTaskRole.Arn
+      ContainerDefinitions:
+        - Name: grafana
+          Image: grafana/grafana:9.5.2
+          Essential: true
+          PortMappings:
+            - ContainerPort: 3000
+              Protocol: tcp
+          Environment:
+            - Name: GF_SECURITY_ADMIN_PASSWORD
+              Value: !Ref GrafanaAdminPassword
+            - Name: GF_INSTALL_PLUGINS
+              Value: "grafana-clock-panel,grafana-simple-json-datasource"
+            - Name: GF_AUTH_ANONYMOUS_ENABLED
+              Value: "false"
+            - Name: GF_USERS_ALLOW_SIGN_UP
+              Value: "false"
+            - Name: GF_SERVER_HTTP_PORT
+              Value: "3000"
+            - Name: GF_LOG_LEVEL
+              Value: "debug"
+            - Name: GF_LOG_MODE
+              Value: "console"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref GrafanaLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: grafana
+          LinuxParameters:
+            InitProcessEnabled: true
+          HealthCheck:
+            Command: 
+              - CMD
+              - wget
+              - -q
+              - --spider
+              - http://localhost:3000
+            Interval: 30
+            Retries: 3
+            StartPeriod: 60
+            Timeout: 5
+
+  # ECS Service
+  GrafanaService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub ${AWS::StackName}-grafana
+      Cluster: !Ref GrafanaCluster
+      TaskDefinition: !Ref GrafanaTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      PlatformVersion: LATEST
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref GrafanaSecurityGroup
+          Subnets:
+            - !Ref PublicSubnet1
+      HealthCheckGracePeriodSeconds: 120
+
+Outputs:
+  GrafanaServiceName:
+    Description: Name of the ECS Service
+    Value: !GetAtt GrafanaService.Name
+
+  ECSCluster:
+    Description: ECS Cluster Name
+    Value: !Ref GrafanaCluster
+
+  LogGroupName:
+    Description: CloudWatch Log Group Name
+    Value: !Ref GrafanaLogGroup

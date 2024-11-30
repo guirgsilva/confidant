@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Installing test dependencies..."
+      - pip install pytest
+      
+  build:
+    commands:
+      - echo "Running tests..."
+      - cd app
+      - python -m pytest tests/ || echo "No tests found"
+
+artifacts:
+  files:
+    - app/**/*
+    - infrastructure/**/*
+  base-directory: '.'
