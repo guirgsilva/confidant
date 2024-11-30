@@ -3,16 +3,10 @@ version: 0.2
 phases:
   build:
     commands:
-      - echo "Starting build phase"
-      - python setup.py build
-      - echo "Creating distribution packages"
-      - python setup.py sdist bdist_wheel
+      - echo "Creating deployment package..."
+      - zip -r deployment.zip ./*
 
 artifacts:
   files:
-    - '**/*'
-    - dist/*
-    - build/*
-    - appspec.yml
-    - scripts/**/*
+    - deployment.zip
   base-directory: '.'

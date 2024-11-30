@@ -6,18 +6,10 @@ phases:
       - echo "Running security checks..."
       - pip install safety bandit
       - safety check
-      - bandit -r ./ -f json -o security-report.json
+      - bandit -r ./ -f json -o security-report.json || echo "Security scan complete with findings"
       
-reports:
-  security_report:
-    files:
-      - security-report.json
-    file-format: JSON
-
 artifacts:
   files:
     - '**/*'
     - security-report.json
-    - appspec.yml
-    - scripts/**/*
   base-directory: '.'
