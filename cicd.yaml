@@ -14,7 +14,7 @@ Parameters:
   
   GitHubBranch:
     Type: String
-    Default: "main"
+    Default: "master"
     Description: "GitHub branch name"
   
   GitHubTokenSecretName:
@@ -85,7 +85,7 @@ Resources:
     Properties:
       Name: !Sub ${AWS::StackName}-Security
       Description: "Security checks for Python application"
-      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      ServiceRole: !ImportValue SecurityIAMStack-SecurityCheckRoleArn
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -348,6 +348,14 @@ Resources:
                 Resource: 
                   - !GetAtt PipelineArtifactsBucket.Arn
                   - !Sub '${PipelineArtifactsBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - 'codebuild:CreateReportGroup'
+                  - 'codebuild:CreateReport'
+                  - 'codebuild:UpdateReport'
+                  - 'codebuild:BatchPutTestCases'
+                Resource:
+                  - !Sub 'arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*'
 
 Outputs:
   PipelineURL:

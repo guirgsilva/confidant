@@ -57,6 +57,7 @@ Resources:
                   - dynamodb:ListTables
                   - kms:Decrypt
                   - s3:GetObject
+                  - s3:GetObjectVersion
                   - s3:ListBucket
                 Resource: "*"
         - PolicyName: CodeDeployPermissions
@@ -66,11 +67,14 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:GetObject
+                  - s3:GetObjectVersion
                   - s3:ListBucket
                 Resource:
                   - !Sub arn:aws:s3:::aws-codedeploy-${AWS::Region}/*
                   - !Sub arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-pipeline-artifacts/*
                   - !Sub arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-pipeline-artifacts
+                  - arn:aws:s3:::cicdstack-pipelineartifactsbucket-*/*
+                  - arn:aws:s3:::cicdstack-pipelineartifactsbucket-*
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate

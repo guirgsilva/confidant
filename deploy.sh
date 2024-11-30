@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Function to check and handle existing stack
+handle_existing_stack() {
+    local stack_name=$1
+    echo "Checking status of $stack_name..."
+    
+    if aws cloudformation describe-stacks --stack-name $stack_name >/dev/null 2>&1; then
+        STATUS=$(aws cloudformation describe-stacks --stack-name $stack_name --query "Stacks[0].StackStatus" --output text)
+        
+        if [ "$STATUS" == "ROLLBACK_COMPLETE" ]; then
+            echo "$stack_name is in ROLLBACK_COMPLETE state. Deleting it first..."
+            aws cloudformation delete-stack --stack-name $stack_name
+            echo "Waiting for $stack_name deletion to complete..."
+            aws cloudformation wait stack-delete-complete --stack-name $stack_name
+            echo "Stack deleted successfully"
+        fi
+    fi
+}
+
 # Function to wait for stack completion and get outputs
 wait_for_stack() {
     local stack_name=$1
@@ -32,7 +50,28 @@ get_stack_output() {
 
 echo "Starting infrastructure deployment..."
 
-# 1. Deploy NetworkStack first
+# 1. Handle and Deploy SecurityIAMStack first
+handle_existing_stack "SecurityIAMStack"
+
+echo "Deploying SecurityIAMStack using security-iam.yaml"
+aws cloudformation deploy \
+    --stack-name SecurityIAMStack \
+    --template-file security-iam.yaml \
+    --capabilities CAPABILITY_NAMED_IAM
+
+wait_for_stack "SecurityIAMStack"
+
+# Get Security IAM Role ARN
+SECURITY_ROLE_ARN=$(get_stack_output "SecurityIAMStack" "SecurityIAMStack-SecurityCheckRoleArn")
+
+if [[ -z "$SECURITY_ROLE_ARN" ]]; then
+    echo "Error: Missing Security Role ARN after SecurityIAMStack deployment."
+    exit 1
+fi
+
+# 2. Handle and Deploy NetworkStack
+handle_existing_stack "NetworkStack"
+
 echo "Deploying NetworkStack using network.yaml"
 aws cloudformation deploy \
     --stack-name NetworkStack \
@@ -55,7 +94,9 @@ if [[ -z "$VPC_ID" || -z "$PRIVATE_SUBNET_1" || -z "$PRIVATE_SUBNET_2" ]]; then
     exit 1
 fi
 
-# 2. Deploy StorageStack
+# 3. Handle and Deploy StorageStack
+handle_existing_stack "StorageStack"
+
 echo "Deploying StorageStack using storage.yaml"
 aws cloudformation deploy \
     --stack-name StorageStack \
@@ -64,7 +105,9 @@ aws cloudformation deploy \
 
 wait_for_stack "StorageStack"
 
-# 3. Deploy DatabaseStack
+# 4. Handle and Deploy DatabaseStack
+handle_existing_stack "DatabaseStack"
+
 echo "Deploying DatabaseStack using database.yaml"
 aws cloudformation deploy \
     --stack-name DatabaseStack \
@@ -88,7 +131,9 @@ if [[ -z "$RDS_ENDPOINT" ]]; then
     exit 1
 fi
 
-# 4. Deploy ComputeStack
+# 5. Handle and Deploy ComputeStack
+handle_existing_stack "ComputeStack"
+
 echo "Deploying ComputeStack using compute.yaml"
 aws cloudformation deploy \
     --stack-name ComputeStack \
@@ -97,7 +142,6 @@ aws cloudformation deploy \
         VPCId=$VPC_ID \
         PublicSubnet1=$PUBLIC_SUBNET_1 \
         PublicSubnet2=$PUBLIC_SUBNET_2 \
-        RDSInstanceEndpoint=$RDS_ENDPOINT \
     --capabilities CAPABILITY_NAMED_IAM
 
 wait_for_stack "ComputeStack"
@@ -118,7 +162,9 @@ if [[ -z "$LOAD_BALANCER_NAME" || -z "$INSTANCE_ID" ]]; then
     exit 1
 fi
 
-# 5. Deploy MonitoringStack
+# 6. Handle and Deploy MonitoringStack
+handle_existing_stack "MonitoringStack"
+
 echo "Deploying MonitoringStack using monitoring.yaml"
 aws cloudformation deploy \
     --stack-name MonitoringStack \
@@ -130,36 +176,20 @@ aws cloudformation deploy \
 
 wait_for_stack "MonitoringStack"
 
-# 6. Handle CICD Stack - Check if exists and delete if necessary
-echo "Checking for existing CICD stack..."
-if aws cloudformation describe-stacks --stack-name CICDStack >/dev/null 2>&1; then
-    echo "Existing CICD stack found. Deleting it before proceeding..."
-    aws cloudformation delete-stack --stack-name CICDStack
-    
-    echo "Waiting for CICD stack deletion to complete..."
-    aws cloudformation wait stack-delete-complete --stack-name CICDStack
-    
-    if [ $? -eq 0 ]; then
-        echo "CICD stack deleted successfully"
-        echo "Waiting 30 seconds for resources to clean up completely..."
-        sleep 30
-    else
-        echo "Failed to delete CICD stack"
-        exit 1
-    fi
-fi
+# 7. Handle and Deploy CICD Stack
+handle_existing_stack "CICDStack"
 
-# Deploy new CICD Stack
-echo "Deploying new CICDStack using cicd.yaml"
+echo "Deploying CICDStack using cicd.yaml"
 aws cloudformation deploy \
     --stack-name CICDStack \
     --template-file cicd.yaml \
     --parameter-overrides \
         GitHubOwner=guirgsilva \
         GitHubRepo=confidant \
-        GitHubBranch=main \
+        GitHubBranch=master \
         GitHubTokenSecretId=github/token \
         ExistingPipelineBucketName=043309321272-us-east-1-pipeline-artifacts \
+        SecurityRoleArn=$SECURITY_ROLE_ARN \
     --capabilities CAPABILITY_NAMED_IAM
 
 wait_for_stack "CICDStack"
@@ -172,4 +202,5 @@ Deployment Summary:
 VPC ID: $VPC_ID
 RDS Endpoint: $RDS_ENDPOINT
 Load Balancer Name: $LOAD_BALANCER_NAME
+Security Role ARN: $SECURITY_ROLE_ARN
 "

@@ -68,46 +68,14 @@ clean_and_delete_bucket() {
     fi
 }
 
-# Function to clean up EFS
-clean_and_delete_efs() {
-    local stack_name=$1
-    echo "Cleaning up EFS for $stack_name..."
-    
-    # Get EFS ID from stack
-    EFS_ID=$(aws cloudformation describe-stack-resources \
-        --stack-name $stack_name \
-        --query "StackResources[?ResourceType=='AWS::EFS::FileSystem'].PhysicalResourceId" \
-        --output text)
-    
-    if [ ! -z "$EFS_ID" ]; then
-        echo "Removing mount targets for EFS $EFS_ID..."
-        
-        # Get and delete mount targets
-        MOUNT_TARGETS=$(aws efs describe-mount-targets \
-            --file-system-id $EFS_ID \
-            --query 'MountTargets[*].MountTargetId' \
-            --output text)
-        
-        for mt in $MOUNT_TARGETS; do
-            echo "Deleting mount target $mt..."
-            aws efs delete-mount-target --mount-target-id $mt
-        done
-        
-        # Wait for mount targets to be deleted
-        echo "Waiting for mount targets to be deleted..."
-        sleep 30
-    fi
-}
-
 # Main deletion sequence
 echo "Starting infrastructure deletion..."
 
 # 1. Delete CICD Stack
 delete_stack "CICDStack"
 
-# 2. Delete Grafana Stack with EFS cleanup
-clean_and_delete_efs "GrafanaStack"
-delete_stack "GrafanaStack"
+# 2. Delete SecurityIAMStack
+delete_stack "SecurityIAMStack"
 
 # 3. Delete Monitoring Stack
 delete_stack "MonitoringStack"
@@ -125,15 +93,11 @@ delete_stack "StorageStack"
 # 7. Delete Network Stack
 delete_stack "NetworkStack"
 
-# Delete Grafana password from SSM Parameter Store
-echo "Removing Grafana credentials from Parameter Store..."
-aws ssm delete-parameter --name "/grafana/admin/password" || true
-
 echo "Infrastructure deletion completed"
 
 # Final verification
 echo "Verifying all stacks are deleted..."
-for stack in "CICDStack" "GrafanaStack" "MonitoringStack" "ComputeStack" "DatabaseStack" "StorageStack" "NetworkStack"; do
+for stack in "CICDStack" "SecurityIAMStack" "MonitoringStack" "ComputeStack" "DatabaseStack" "StorageStack" "NetworkStack"; do
     if ! aws cloudformation describe-stacks --stack-name $stack >/dev/null 2>&1; then
         echo "$stack: Deleted ✓"
     else
