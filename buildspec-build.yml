@@ -16,12 +16,17 @@ phases:
       - cp -r * build/ || true
       - cd build
       - zip -r ../deployment.zip ./*
+      - cd ..
+      - ls -la  # Verificar os arquivos gerados
+      - echo "Deployment package contents:"
+      - unzip -l deployment.zip
 
 artifacts:
   files:
     - deployment.zip
     - appspec.yml
     - scripts/**/*
+    - requirements.txt
   base-directory: '.'
   discard-paths: no
 
