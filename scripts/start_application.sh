@@ -1,72 +1,72 @@
 #!/bin/bash
 
-# Move to the application directory
+# Move para o diretório da aplicação
 cd /opt/confidant
 
-# Kill any existing application processes
+# Mata qualquer processo existente da aplicação
 pkill -f flask || true
 
-# List the contents of the debug directory
-echo “Contents of the current directory:”
+# Lista o conteúdo do diretório para debug
+echo "Current directory contents:"
 ls -la
 
-# Check if app.py exists
-if [ ! -f “app.py” ]; then
-    echo “app.py not found. Creating basic Flask application...”
-    cat > app.py << 'EOF'
-from flask import Flask
+# Verifica se app.py existe e tem o conteúdo correto
+echo "from flask import Flask
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return “Hello, World!”
+    return 'Hello, World!'
 
 @app.route('/health')
 def health():
-    return “OK”, 200
+    return 'OK', 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
-EOF
-fi
+    app.run(host='0.0.0.0', port=80)" > app.py
 
-# Set permissions
+# Configura permissões
 chown -R ec2-user:ec2-user /opt/confidant
-chmod +x app.py
+chmod 755 app.py
 
-# Set up the Flask environment
+# Configura o ambiente Flask
 export FLASK_APP=/opt/confidant/app.py
 export PYTHONPATH=/opt/confidant
 
-# Configuring the registers
-tap /opt/confidant/flask.log
+# Configura logs
+touch /opt/confidant/flask.log
 chown ec2-user:ec2-user /opt/confidant/flask.log
 
-# Start the application with full path
-cd /opt/confidant && /usr/local/bin/flask run --host=0.0.0.0 --port=80 > /opt/confidant/flask.log 2>&1 &
+# Tenta iniciar a aplicação usando python diretamente
+python3 -c "import sys; print(sys.version)"
+cd /opt/confidant && python3 app.py > /opt/confidant/flask.log 2>&1 &
 
-# Captures the PID
+# Captura o PID
 PID=$!
 
-# Wait for the application to start
+# Espera a aplicação iniciar
 sleep 10
 
-# Check if the process is running
+# Verifica se o processo está rodando
 if ps -p $PID > /dev/null; then
-    echo “Application started successfully with PID: $PID”
-    # Try making a request to check if it is responding
+    echo "Application started successfully with PID: $PID"
+    # Tenta fazer uma requisição para verificar se está respondendo
     if curl -s http://localhost:80/health > /dev/null; then
-        echo “The application is responding correctly”
+        echo "Application is responding correctly"
         exit 0
     else
-        echo “The application process is running but is not responding to requests”
-        echo “Flask logs:”
+        echo "Application process is running but not responding to requests"
+        echo "Flask logs:"
         cat /opt/confidant/flask.log
         exit 1
     fi
 else
-    echo “Application failed to start. Logs:”
+    echo "Application failed to start. Logs:"
     cat /opt/confidant/flask.log
+    echo "Python version:"
+    python3 --version
+    echo "Flask version:"
+    pip3 list | grep Flask
     exit 1
 fi
