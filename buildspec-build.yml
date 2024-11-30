@@ -8,14 +8,16 @@ phases:
   pre_build:
     commands:
       - echo "Starting build phase..."
+      - mkdir -p build/scripts/
       
   build:
     commands:
       - echo "Creating deployment package..."
-      - mkdir -p build/
       - cp -r * build/ || true
       - cd build
-      - zip -r ../deployment.zip ./*
+      - zip -r ../deployment.zip ./* 
+      - cd ..
+      - ls -la  # Verificar arquivos gerados
 
 artifacts:
   files:
