@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: RDS MySQL Database
+
+Parameters:
+  VPCId:
+    Type: String
+    Description: VPC ID
+  PrivateSubnet1:
+    Type: String
+    Description: Private Subnet 1 ID
+  PrivateSubnet2:
+    Type: String
+    Description: Private Subnet 2 ID
+
+Resources:
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 10.0.0.0/16
+
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet Group for RDS
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  MyRDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      AllocatedStorage: 20
+      MasterUsername: admin
+      MasterUserPassword: password123 # Replace with Secrets Manager for production
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      MultiAZ: true
+
+Outputs:
+  RDSInstanceEndpoint:
+    Value: !GetAtt MyRDSInstance.Endpoint.Address
+    Description: RDS Endpoint Address
+    Export:
+      Name: RDSInstanceEndpoint

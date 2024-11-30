@@ -1,0 +1,182 @@
+# AWS Infrastructure Project
+
+![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![CloudFormation](https://img.shields.io/badge/CloudFormation-orange?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/Pipeline-blue?style=for-the-badge&logo=amazon-aws&logoColor=white)
+
+> A fault-tolerant, scalable web application infrastructure in AWS using Infrastructure as Code
+
+## 🏗️ Architecture
+
+The infrastructure is deployed across two Availability Zones (AZs) and includes:
+
+- VPC with public and private subnets
+- Application Load Balancer
+- Auto Scaling Group
+- Multi-AZ RDS
+- S3 for static assets
+- CodePipeline for CI/CD
+- CloudWatch monitoring
+
+## 🚀 Prerequisites
+
+- AWS CLI configured with appropriate permissions
+- AWS account with administrator access or following permissions:
+  - CloudFormation
+  - S3
+  - VPC
+  - EC2
+  - RDS
+  - IAM
+  - CloudWatch
+  - CodePipeline
+  - CodeBuild
+- GitHub OAuth token stored in AWS Secrets Manager
+  - Secret name: `github/aws-token`
+
+## 📦 Stack Components
+
+| Stack Name | Description | Dependencies |
+|------------|-------------|--------------|
+| NetworkStack | VPC and network infrastructure | None |
+| StorageStack | S3 bucket configuration | None |
+| DatabaseStack | RDS in Multi-AZ setup | NetworkStack |
+| ComputeStack | EC2, ALB, and ASG | NetworkStack, DatabaseStack |
+| MonitoringStack | CloudWatch configuration | ComputeStack |
+| CICDStack | Pipeline setup | StorageStack |
+
+## 🛠️ Deployment
+
+### Deploy Infrastructure
+```bash
+./deploy.sh
+```
+
+### Clean Up Resources
+```bash
+./delete.sh
+```
+
+## 🔒 Security Considerations
+
+### Network Security
+- Private subnets for application and database tiers
+- Public subnets only for ALB
+- Security groups with minimum required access
+
+### Data Security
+- RDS encryption at rest
+- S3 bucket encryption enabled
+- SSL/TLS for data in transit
+
+### Access Control
+- IAM roles with least privilege
+- No direct SSH access to instances
+- Security group restrictions
+
+## 📈 Scaling Strategy
+
+### Auto Scaling Configuration
+- Minimum: 1 instance
+- Maximum: 3 instances
+- Desired: 2 instances
+
+### Scaling Triggers
+- Scale Out: CPU > 70%
+- Scale In: CPU < 30%
+- Cooldown: 300 seconds
+
+## 📊 Monitoring
+
+### CloudWatch Metrics
+- CPU Utilization
+- Memory Usage
+- Error Rates
+- Custom Application Metrics
+
+### Alerts
+- High CPU Usage (>70%)
+- High Memory Usage (>80%)
+- Error Rate Threshold (>10/minute)
+- RDS Storage Space (<20% free)
+
+## 🔄 CI/CD Pipeline
+
+### Pipeline Stages
+1. Source (GitHub)
+2. Install
+3. Test
+4. Security Check
+5. Build
+
+### Build Specifications
+Located in repository:
+- `buildspec.yml`: Main installation
+- `buildspec-test.yml`: Test execution
+- `buildspec-security.yml`: Security scanning
+- `buildspec-build.yml`: Build process
+
+## 💡 Improvement Recommendations
+
+### Short Term
+- Implement WAF for ALB
+- Add GuardDuty
+- Configure CloudFront
+- Implement ElastiCache
+
+### Long Term
+- Migrate to containers (ECS/EKS)
+- Implement blue-green deployments
+- Add disaster recovery region
+- Optimize for cost using Reserved Instances
+
+## 📝 Assumptions
+
+1. **Region**: us-east-1 (default)
+2. **Application**:
+   - Python-based application
+   - Requires MySQL database
+   - Static assets in S3
+3. **Performance**:
+   - Moderate traffic load
+   - Non-CPU intensive workload
+4. **Cost**:
+   - Development/staging environment
+   - Cost optimization not primary concern
+
+## 🏷️ Resource Tags
+
+| Tag | Value | Purpose |
+|-----|--------|---------|
+| Environment | Production | Resource identification |
+| Project | WebApp | Cost allocation |
+| ManagedBy | CloudFormation | Management method |
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+
+## 🤝 Contributing
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📞 Support
+
+For support:
+- Open an issue
+- Contact AWS Systems Engineer team
+- Check AWS documentation
+
+## ⚠️ Known Limitations
+
+1. Basic configurations used for development
+2. Simplified security groups for demonstration
+3. Minimal monitoring setup
+4. No backup strategy implemented
+5. Basic CI/CD pipeline without advanced testing
+
+---

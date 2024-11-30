@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 14  # Altere para a versão necessária, se for diferente
+    commands:
+      - echo Installing dependencies
+      - npm install
+
+  pre_build:
+    commands:
+      - echo Running pre-build commands
+
+  build:
+    commands:
+      - echo Building the application
+      - npm run build  # Altere este comando para o comando específico de build do seu projeto
+
+  post_build:
+    commands:
+      - echo Build complete
+
+artifacts:
+  files:
+    - '**/*'  # Inclui todos os arquivos gerados na pasta atual
+  discard-paths: no
