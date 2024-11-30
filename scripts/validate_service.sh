@@ -1,33 +1,26 @@
 #!/bin/bash
-# Additional wait to make sure the application has started
-sleep 10
 
-# Try several times
-for i in {1..6}; do
-    echo “Try $i to validate the application...”
+# Espera a aplicação iniciar completamente
+sleep 5
+
+# Tenta até 3 vezes
+for i in {1..3}; do
+    echo "Attempt $i to validate service..."
     
-    # Try on port 80
+    # Verifica se a aplicação está respondendo
     if curl -s http://localhost:80/health > /dev/null; then
-        echo “The application is running on port 80”
+        echo "Application is running and responding"
         exit 0
     fi
     
-    # Try on port 5000
-    if curl -s http://localhost:5000/health > /dev/null; then
-        echo “The application is running on port 5000”
-        exit 0
-    fi
-    
-    echo “The application is not responding, wait 10 seconds...”
-    sleep 10
-complete
+    echo "Service not responding, waiting 5 seconds..."
+    sleep 5
+done
 
-# Check the logs in case of failure
-echo “Application startup failed. Check the logs:”
-cat /opt/confidant/flask.log
-echo “Process status:”
+# Se chegou aqui, falhou todas as tentativas
+echo "Service validation failed after 3 attempts"
+echo "Checking service status:"
 ps aux | grep python3
-echo “Port status:”
-netstat -tulpn | grep -E ':80|:5000'
-
+echo "Checking application logs:"
+cat /opt/confidant/flask.log
 exit 1
