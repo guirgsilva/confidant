@@ -1,0 +1,48 @@
+version: 0.2
+
+env:
+  variables:
+    PYTHONPATH: '/usr/local/lib/python3.9/site-packages'
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - python -m pip install --upgrade pip
+      - pip install --upgrade setuptools wheel
+      - pip install virtualenv
+      - virtualenv /tmp/venv
+      - source /tmp/venv/bin/activate
+
+  pre_build:
+    commands:
+      - echo "Installing security tools..."
+      - pip install safety bandit werkzeug>=3.0.6
+
+  build:
+    commands:
+      - echo "Running security checks..."
+      - bandit -r ./ -f json -o security-report.json || true
+      - pip freeze > requirements-lock.txt
+      - safety check -r requirements-lock.txt --json > safety-report.json || true
+
+reports:
+  security_checks:
+    files:
+      - security-report.json
+      - safety-report.json
+    base-directory: .
+    file-format: JSON
+
+artifacts:
+  files:
+    - '**/*'
+    - security-report.json
+    - safety-report.json
+    - requirements-lock.txt
+  discard-paths: no
+
+cache:
+  paths:
+    - '/tmp/venv/**/*'
