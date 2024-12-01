@@ -8,18 +8,26 @@ phases:
   pre_build:
     commands:
       - echo "Starting build phase..."
+      - echo "Current directory: $(pwd)"
+      - ls -la
       
   build:
     commands:
       - echo "Creating deployment package..."
-      - mkdir -p build/
-      - mkdir -p build/app
-      - mkdir -p build/opt/confidant/scripts
-      - cp -r app/* build/app/
-      - cp -r infrastructure/scripts/* build/opt/confidant/scripts/
-      - cp infrastructure/pipeline/appspec.yml build/
-      - cd build
-      - zip -r ../deployment.zip ./*
+      # Criar estrutura do pacote
+      - mkdir -p deployment/
+      # Copiar aplicação
+      - cp -r app/* deployment/
+      # Copiar scripts
+      - mkdir -p deployment/scripts
+      - cp infrastructure/scripts/* deployment/scripts/
+      # Copiar appspec.yml para a raiz
+      - cp infrastructure/pipeline/appspec.yml deployment/
+      # Debug: mostrar estrutura
+      - echo "Deployment directory structure:"
+      - ls -la deployment/
+      - cd deployment
+      - zip -r ../deployment.zip .
       - cd ..
       - echo "Deployment package contents:"
       - unzip -l deployment.zip
@@ -27,6 +35,4 @@ phases:
 artifacts:
   files:
     - deployment.zip
-    - infrastructure/pipeline/appspec.yml
-  base-directory: '.'
   discard-paths: no
