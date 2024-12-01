@@ -7,16 +7,21 @@ phases:
   build:
     commands:
       - echo "Creating deployment package..."
-      - mkdir -p build
-      - cp -r app/* build/
-      - cp infrastructure/scripts/* build/
-      - cp infrastructure/pipeline/appspec.yml build/appspec.yml
-      - cd build
-      - ls -la
-      - zip -r deployment-archive.zip .
+      # Criar estrutura correta
+      - cp infrastructure/pipeline/appspec.yml ./appspec.yml
+      - mkdir -p temp/app
+      - mkdir -p temp/scripts
+      # Copiar arquivos mantendo estrutura
+      - cp -r app/* temp/app/
+      - cp -r infrastructure/scripts/* temp/scripts/
+      # Criar o zip com a estrutura correta
+      - cd temp
+      - zip -r ../deployment-archive.zip .
       - cd ..
-      - mv build/deployment-archive.zip .
-      - ls -la
+      - zip -g deployment-archive.zip appspec.yml
+      # Verificar conteúdo
+      - unzip -l deployment-archive.zip
+      - echo "Deployment package created"
 
 artifacts:
   files:

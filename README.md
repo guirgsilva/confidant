@@ -2,210 +2,264 @@
 
 ![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
 ![CloudFormation](https://img.shields.io/badge/CloudFormation-orange?style=for-the-badge&logo=amazon-aws&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/Pipeline-blue?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 
-> A fault-tolerant, scalable web application infrastructure in AWS using Infrastructure as Code
+> A production-ready AWS infrastructure implementation for a scalable Python web application using Infrastructure as Code (IaC).
 
-## 🏗️ Architecture Overview
+## 📁 Project Structure
 
-The infrastructure is designed with high availability and fault tolerance in mind, deployed across two Availability Zones (AZs) and includes:
-
-- **Networking Layer:**
-  - VPC with public and private subnets across 2 AZs
-  - Internet Gateway and NAT Gateways
-  - Security groups and NACLs
-
-- **Compute Layer:**
-  - Auto Scaling Group with EC2 instances
-  - Application Load Balancer for traffic distribution
-  - Systems Manager Session Manager for secure instance access
-
-- **Data Layer:**
-  - Multi-AZ RDS MySQL database
-  - S3 bucket for static assets and artifacts
-  - Encryption at rest for sensitive data
-
-- **CI/CD Pipeline:**
-  - CodePipeline integration with GitHub
-  - Multiple stages: Install, Test, Security Check, Build, Deploy
-  - CodeDeploy for application deployment
-
-- **Monitoring:**
-  - CloudWatch metrics and alarms
-  - Custom dashboard for visibility
-  - Grafana container (optional) for advanced visualization
+```plaintext
+.
+├── app/
+│   ├── app.py                 # Python Flask application
+│   └── requirements.txt       # Python dependencies
+└── infrastructure/
+    ├── deploy.sh             # Main deployment script
+    ├── delete.sh            # Resource cleanup script
+    ├── templates/
+    │   ├── network.yaml     # VPC and network components
+    │   ├── storage.yaml     # S3 configuration
+    │   ├── compute.yaml     # EC2 and ALB setup
+    │   ├── database.yaml    # RDS configuration
+    │   ├── monitoring.yaml  # CloudWatch setup
+    │   ├── security-iam.yaml # IAM configurations
+    │   └── cicd.yaml        # Pipeline setup
+    ├── scripts/
+    │   ├── after_install.sh
+    │   ├── before_install.sh
+    │   ├── start_application.sh
+    │   └── validate_service.sh
+    ├── pipeline/
+    │   ├── buildspec.yml
+    │   ├── buildspec-build.yml
+    │   ├── buildspec-install.yml
+    │   ├── buildspec-security.yml
+    │   ├── buildspec-test.yml
+    │   └── appspec.yml
+    └── monitoring/
+        ├── grafana-ecs-simple.yaml
+        └── grafana-policy.json
+```
 
 ## 🚀 Prerequisites
 
-1. **AWS Account Requirements:**
-   - AWS CLI installed and configured
-   - Administrator access or appropriate IAM permissions
-   - Access to required AWS services in your region
-
-2. **Required Tools:**
+1. **AWS Configuration**
    ```bash
-   aws --version  # AWS CLI v2+
-   python --version  # Python 3.8+
-   ```
+   # Install AWS CLI
+   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+   unzip awscliv2.zip
+   sudo ./aws/install
 
-3. **Security Configuration:**
-   - GitHub OAuth token stored in AWS Secrets Manager
-   - Secret name: `github/aws-token`
-
-## 📦 Deployment Structure
-
-```plaintext
-Infrastructure/
-├── deploy.sh           # Main deployment script
-├── delete.sh           # Cleanup script
-├── templates/
-│   ├── network.yaml    # VPC and network components
-│   ├── storage.yaml    # S3 configuration
-│   ├── database.yaml   # RDS setup
-│   ├── compute.yaml    # EC2 and ALB configuration
-│   ├── monitoring.yaml # CloudWatch setup
-│   └── cicd.yaml       # Pipeline configuration
-└── scripts/
-    ├── before_install.sh
-    ├── after_install.sh
-    ├── start_application.sh
-    └── validate_service.sh
-```
-
-## 🛠️ Deployment Steps
-
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/your-repo/infrastructure.git
-   cd infrastructure
-   ```
-
-2. **Configure AWS Credentials:**
-   ```bash
+   # Configure AWS credentials
    aws configure
    ```
 
-3. **Deploy Infrastructure:**
+2. **Required Tools**
    ```bash
-   chmod +x deploy.sh
+   # Python 3.8+
+   python3 --version
+
+   # Git
+   git --version
+   ```
+
+3. **GitHub Configuration**
+   - Create GitHub OAuth token
+   - Store token in AWS Secrets Manager:
+     ```bash
+     aws secretsmanager create-secret \
+         --name github/aws-token \
+         --secret-string '{"token":"your-github-token"}'
+     ```
+
+## 🏗️ Deployment Instructions
+
+1. **Clone Repository**
+   ```bash
+   git clone https://github.com/guirgsilva/confidant.git
+   cd confidant
+   ```
+
+2. **Initial Setup**
+   ```bash
+   # Make scripts executable
+   chmod +x infrastructure/deploy.sh
+   chmod +x infrastructure/delete.sh
+   chmod +x infrastructure/scripts/*.sh
+   ```
+
+3. **Deploy Infrastructure**
+   ```bash
+   cd infrastructure
    ./deploy.sh
    ```
 
-4. **Verify Deployment:**
-   - Check AWS Console for stack status
-   - Verify all resources are created
-   - Test application endpoints
+   The deployment process will:
+   - Create networking infrastructure
+   - Set up storage resources
+   - Configure database
+   - Deploy compute resources
+   - Set up monitoring
+   - Configure CI/CD pipeline
 
-5. **Cleanup Resources:**
+4. **Monitor Deployment**
    ```bash
-   chmod +x delete.sh
-   ./delete.sh
+   # Check CloudFormation stack status
+   aws cloudformation describe-stacks \
+       --stack-name NetworkStack \
+       --query 'Stacks[0].StackStatus'
+
+   # View CloudWatch logs
+   aws logs get-log-events \
+       --log-group-name /aws/codebuild/confidant \
+       --log-stream-name main
    ```
+
+## 🧹 Cleanup
+
+To remove all created resources:
+```bash
+cd infrastructure
+./delete.sh
+```
+
+## 🏗️ Infrastructure Components
+
+### Network Layer
+- VPC across 2 AZs
+- Public and private subnets
+- Internet Gateway
+- NAT Gateways
+- Network ACLs
+
+### Compute Layer
+- Auto Scaling Group
+- Application Load Balancer
+- EC2 instances with Amazon Linux 2
+
+### Database Layer
+- Multi-AZ RDS MySQL
+- Automated backups
+- Encryption at rest
+
+### Storage Layer
+- S3 bucket for artifacts
+- Versioning enabled
+- Server-side encryption
+
+### Monitoring
+- CloudWatch metrics
+- Custom dashboard
+- Automated alarms
+- Optional Grafana integration
+
+### CI/CD Pipeline
+1. Source (GitHub)
+2. Install dependencies
+3. Run tests
+4. Security checks
+5. Build application
+6. Deploy to production
+
+## 📊 Monitoring and Alerts
+
+### CloudWatch Metrics
+- CPU Utilization
+- Memory Usage
+- Request Count
+- Error Rates
+- Database Connections
+
+### Automated Alerts
+- High CPU Usage (>70%)
+- High Memory Usage (>80%)
+- Error Rate Spikes
+- Failed Deployments
 
 ## 🔒 Security Features
 
-1. **Network Security:**
-   - Private subnets for application and database
+1. **Network Security**
+   - Private subnets for application
    - Security groups with minimal access
-   - NACLs for additional network protection
+   - Network ACLs for additional protection
 
-2. **Access Management:**
+2. **Access Management**
    - IAM roles with least privilege
-   - Systems Manager Session Manager for instance access
-   - No direct SSH access required
+   - Systems Manager Session Manager
+   - No direct SSH access
 
-3. **Data Protection:**
+3. **Data Protection**
    - RDS encryption at rest
    - S3 bucket encryption
-   - SSL/TLS for data in transit
+   - TLS for data in transit
 
-## 📈 Scaling Configuration
+## 🔄 Regular Maintenance
 
-1. **Auto Scaling Settings:**
-   ```yaml
-   MinSize: 1
-   MaxSize: 3
-   DesiredCapacity: 2
+1. **Daily Tasks**
+   - Monitor CloudWatch metrics
+   - Check application logs
+   - Review security events
+
+2. **Weekly Tasks**
+   - Review CloudWatch alarms
+   - Check backup status
+   - Update dependencies
+
+3. **Monthly Tasks**
+   - Security patches
+   - Performance optimization
+   - Cost review
+
+## 🆘 Troubleshooting
+
+1. **Deployment Issues**
+   ```bash
+   # Check CloudFormation events
+   aws cloudformation describe-stack-events \
+       --stack-name NetworkStack
+
+   # View detailed logs
+   aws logs get-log-events \
+       --log-group-name /aws/codebuild/confidant
    ```
 
-2. **Scaling Policies:**
-   - Scale Out: CPU > 70% for 5 minutes
-   - Scale In: CPU < 30% for 10 minutes
-   - Cooldown Period: 300 seconds
+2. **Application Issues**
+   ```bash
+   # Check application logs
+   aws logs get-log-events \
+       --log-group-name /aws/ec2/confidant
 
-## 📊 Monitoring Setup
+   # View EC2 system logs
+   aws ec2 get-console-output \
+       --instance-id i-1234567890abcdef0
+   ```
 
-1. **CloudWatch Metrics:**
-   - CPU Utilization
-   - Memory Usage
-   - Request Count
-   - Error Rates
+## 📝 Contributing
 
-2. **Alarms:**
-   - High CPU Usage (>70%)
-   - High Memory Usage (>80%)
-   - Error Rate Threshold
-   - Database Connection Issues
-
-## 🔄 CI/CD Pipeline Stages
-
-1. **Source:**
-   - GitHub repository integration
-   - Branch: master
-   - Webhook triggers
-
-2. **Build:**
-   - Python dependencies installation
-   - Unit tests execution
-   - Security scanning
-   - Artifact creation
-
-3. **Deploy:**
-   - Blue-green deployment
-   - Health checks
-   - Automatic rollback
-
-## 💡 Improvement Recommendations
-
-1. **Short Term:**
-   - Implement WAF
-   - Add GuardDuty
-   - Configure CloudFront
-   - Set up ElastiCache
-
-2. **Long Term:**
-   - Container migration (ECS/EKS)
-   - Multi-region deployment
-   - Advanced monitoring
-   - Cost optimization
-
-## ⚠️ Known Limitations
-
-1. Basic configurations used (development setup)
-2. Single region deployment
-3. Simple monitoring setup
-4. Manual secret rotation
-5. Basic CI/CD pipeline
-
-## 🤝 Contributing
-
-1. Fork the repository
+1. Fork repository
 2. Create feature branch
+   ```bash
+   git checkout -b feature/NewFeature
+   ```
 3. Commit changes
+   ```bash
+   git commit -m "Add new feature"
+   ```
 4. Push to branch
+   ```bash
+   git push origin feature/NewFeature
+   ```
 5. Create Pull Request
 
 ## 📞 Support
 
-For support and issues:
-1. Check documentation
-2. Open GitHub issue
-3. Contact AWS support if needed
+For support:
+- Open GitHub issue
+- Check AWS documentation
+- Contact system administrators
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
-
-For detailed configuration and advanced setup, refer to individual component documentation in the `/docs` directory.
