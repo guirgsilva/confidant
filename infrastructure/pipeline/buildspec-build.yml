@@ -4,27 +4,20 @@ phases:
   install:
     runtime-versions:
       python: 3.8
-  
   pre_build:
     commands:
-      - echo "Starting build phase..."
-      - echo "Current directory: $(pwd)"
-      - ls -la
-      
+      - echo Starting build phase
   build:
     commands:
-      - echo "Creating deployment package..."
-      - mkdir -p deployment/
+      - mkdir -p deployment
       - cp -r app/* deployment/
       - mkdir -p deployment/scripts
       - cp infrastructure/scripts/* deployment/scripts/
       - cp infrastructure/pipeline/appspec.yml deployment/
-      - echo "Deployment directory structure:"
       - ls -la deployment/
       - cd deployment
       - zip -r ../deployment.zip .
       - cd ..
-      - echo "Deployment package contents:"
       - unzip -l deployment.zip
 
 artifacts:
