@@ -1,0 +1,38 @@
+{
+    "Global": {
+        "Environment": "Production",
+        "Project": "Confidant",
+        "Region": "us-east-1"
+    },
+    "VPC": {
+        "CIDR": "10.0.0.0/16",
+        "PublicSubnet1CIDR": "10.0.1.0/24",
+        "PublicSubnet2CIDR": "10.0.2.0/24",
+        "PrivateSubnet1CIDR": "10.0.3.0/24",
+        "PrivateSubnet2CIDR": "10.0.4.0/24"
+    },
+    "EC2": {
+        "InstanceType": "t2.micro",
+        "KeyPairName": "confidant-key",
+        "MinSize": 1,
+        "MaxSize": 3,
+        "DesiredCapacity": 2
+    },
+    "RDS": {
+        "InstanceClass": "db.t3.micro",
+        "AllocatedStorage": 20,
+        "Engine": "mysql",
+        "EngineVersion": "8.0"
+    },
+    "Monitoring": {
+        "CPUUtilizationThreshold": 70,
+        "MemoryUtilizationThreshold": 80,
+        "ErrorRateThreshold": 10,
+        "AlarmEvaluationPeriods": 2
+    },
+    "Tags": {
+        "Application": "Confidant",
+        "Environment": "Production",
+        "ManagedBy": "CloudFormation"
+    }
+}
