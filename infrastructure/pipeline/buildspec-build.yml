@@ -4,32 +4,21 @@ phases:
   install:
     runtime-versions:
       python: 3.8
-  
-  pre_build:
-    commands:
-      - echo "Starting build phase..."
-      
   build:
     commands:
       - echo "Creating deployment package..."
-      - mkdir -p build/
-      - cp -r * build/ || true
+      - mkdir -p build
+      - cp -r app/* build/
+      - cp infrastructure/scripts/* build/
+      - cp infrastructure/pipeline/appspec.yml build/appspec.yml
       - cd build
-      - zip -r ../deployment.zip ./*
+      - ls -la
+      - zip -r deployment-archive.zip .
       - cd ..
-      - echo "Deployment package contents:"
-      - unzip -l deployment.zip
+      - mv build/deployment-archive.zip .
+      - ls -la
 
 artifacts:
   files:
-    - deployment.zip
-    - appspec.yml
-    - scripts/**/*
-    - app.py
-    - requirements.txt
+    - deployment-archive.zip
   base-directory: '.'
-  discard-paths: no
-
-cache:
-  paths:
-    - '/root/.cache/pip/**/*'
