@@ -14,16 +14,11 @@ phases:
   build:
     commands:
       - echo "Creating deployment package..."
-      # Criar estrutura do pacote
       - mkdir -p deployment/
-      # Copiar aplicação
       - cp -r app/* deployment/
-      # Copiar scripts
       - mkdir -p deployment/scripts
       - cp infrastructure/scripts/* deployment/scripts/
-      # Copiar appspec.yml para a raiz
       - cp infrastructure/pipeline/appspec.yml deployment/
-      # Debug: mostrar estrutura
       - echo "Deployment directory structure:"
       - ls -la deployment/
       - cd deployment
