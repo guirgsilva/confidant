@@ -2,7 +2,9 @@ version: 0.0
 os: linux
 files:
   - source: /app
-    destination: /opt/confidant
+    destination: /opt/confidant/app
+  - source: /opt/confidant/scripts
+    destination: /opt/confidant/scripts
 
 permissions:
   - object: /opt/confidant
@@ -13,21 +15,28 @@ permissions:
     type:
       - file
       - directory
+  - object: /opt/confidant/scripts
+    pattern: "**"
+    owner: root
+    group: root
+    mode: 755
+    type:
+      - file
 
 hooks:
   BeforeInstall:
-    - location: infrastructure/scripts/before_install.sh
+    - location: opt/confidant/scripts/before_install.sh
       timeout: 300
       runas: root
   AfterInstall:
-    - location: infrastructure/scripts/after_install.sh
+    - location: opt/confidant/scripts/after_install.sh
       timeout: 300
       runas: root
   ApplicationStart:
-    - location: infrastructure/scripts/start_application.sh
+    - location: opt/confidant/scripts/start_application.sh
       timeout: 300
       runas: root
   ValidateService:
-    - location: infrastructure/scripts/validate_service.sh
+    - location: opt/confidant/scripts/validate_service.sh
       timeout: 300
       runas: root

@@ -48,18 +48,6 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
       Policies:
-        - PolicyName: ConfidantAccess
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:ListTables
-                  - kms:Decrypt
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-                  - s3:ListBucket
-                Resource: "*"
         - PolicyName: CodeDeployPermissions
           PolicyDocument:
             Version: "2012-10-17"
@@ -75,6 +63,20 @@ Resources:
                   - !Sub arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-pipeline-artifacts
                   - arn:aws:s3:::cicdstack-pipelineartifactsbucket-*/*
                   - arn:aws:s3:::cicdstack-pipelineartifactsbucket-*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource: 
+                  - !Sub 'arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-pipeline-artifacts/*'
+                  - !Sub 'arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-pipeline-artifacts'
+                  - 'arn:aws:s3:::cicdstack-pipelineartifactsbucket-*/*'
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: 
+                  - !Sub 'arn:aws:s3:::${AWS::AccountId}-${AWS::Region}-pipeline-artifacts'
+                  - 'arn:aws:s3:::cicdstack-pipelineartifactsbucket-*'
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -97,18 +99,32 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            # Instalar CodeDeploy Agent
             yum update -y
+            
+            # Install CodeDeploy Agent
             yum install -y ruby wget
-            wget https://aws-codedeploy-${AWS::Region}.s3.amazonaws.com/latest/install
-            chmod +x ./install
-            ./install auto
-
-            # Instalar dependências básicas
+            CODEDEPLOY_BIN="/opt/codedeploy-agent/bin/codedeploy-agent"
+            if [ ! -f "$CODEDEPLOY_BIN" ]; then
+              cd /home/ec2-user
+              wget https://aws-codedeploy-${AWS::Region}.s3.amazonaws.com/latest/install
+              chmod +x ./install
+              ./install auto
+              systemctl enable codedeploy-agent
+              systemctl start codedeploy-agent
+            fi
+            
+            # Verify CodeDeploy Agent is running
+            if ! systemctl is-active --quiet codedeploy-agent; then
+              echo "CodeDeploy agent failed to start. Check logs for details."
+              exit 1
+            fi
+            
+            # Install application dependencies
             yum install -y python3-pip python3-devel gcc
-
-            # Criar diretório da aplicação
+            
+            # Create application directory
             mkdir -p /opt/confidant
+            chmod 755 /opt/confidant
 
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
