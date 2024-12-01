@@ -7,23 +7,31 @@ phases:
   build:
     commands:
       - echo "Creating deployment package..."
-      # Criar estrutura correta
-      - cp infrastructure/pipeline/appspec.yml ./appspec.yml
-      - mkdir -p temp/app
-      - mkdir -p temp/scripts
-      # Copiar arquivos mantendo estrutura
-      - cp -r app/* temp/app/
-      - cp -r infrastructure/scripts/* temp/scripts/
-      # Criar o zip com a estrutura correta
-      - cd temp
+      # Criar estrutura temporária para app e scripts
+      - mkdir -p build
+      - mkdir -p build/app
+      - mkdir -p build/scripts
+      
+      # Copiar arquivos da aplicação
+      - cp -r app/* build/app/
+      - cp -r infrastructure/scripts/* build/scripts/
+      
+      # Copiar appspec.yml FORA da pasta build
+      - cp infrastructure/pipeline/appspec.yml appspec.yml
+      
+      # Criar o zip com o conteúdo de build primeiro
+      - cd build
       - zip -r ../deployment-archive.zip .
       - cd ..
+      
+      # Adicionar appspec.yml na raiz do zip
       - zip -g deployment-archive.zip appspec.yml
-      # Verificar conteúdo
+      
+      # Verificar o conteúdo do zip
+      - echo "Deployment archive contents:"
       - unzip -l deployment-archive.zip
-      - echo "Deployment package created"
-
+      
 artifacts:
   files:
     - deployment-archive.zip
-  base-directory: '.'
+  discard-paths: no
