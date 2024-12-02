@@ -20,7 +20,7 @@ done
 # Se chegou aqui, falhou todas as tentativas
 echo "Service validation failed after 3 attempts"
 echo "Checking service status:"
-ps aux | grep python3
+sudo ps aux | grep python3
 echo "Checking application logs:"
-cat /opt/confidant/app/flask.log
+sudo cat /opt/confidant/app/flask.log
 exit 1

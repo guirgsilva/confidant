@@ -4,15 +4,15 @@
 cd /opt/confidant/app
 
 # Mata processos anteriores
-pkill -f "app.py" || true
+sudo pkill -f "app.py" || true
 
 # Configura o ambiente
 export FLASK_APP=/opt/confidant/app/app.py
 export PYTHONPATH=/opt/confidant/app
 
 # Configura logs
-touch /opt/confidant/app/flask.log
-chown ec2-user:ec2-user /opt/confidant/app/flask.log
+sudo touch /opt/confidant/app/flask.log
+sudo chown ec2-user:ec2-user /opt/confidant/app/flask.log
 
 # Inicia a aplicação
 nohup python3 app.py > /opt/confidant/app/flask.log 2>&1 &
@@ -35,6 +35,6 @@ if ps -p $PID > /dev/null; then
     fi
 else
     echo "Application failed to start"
-    cat /opt/confidant/app/flask.log
+    sudo cat /opt/confidant/app/flask.log
     exit 1
 fi
