@@ -5,9 +5,7 @@ delete_stack() {
     local stack_name=$1
     echo "Deleting $stack_name..."
     
-    # Check if stack exists
     if aws cloudformation describe-stacks --stack-name $stack_name >/dev/null 2>&1; then
-        # Delete stack
         aws cloudformation delete-stack --stack-name $stack_name
         
         echo "Waiting for $stack_name deletion to complete..."
@@ -22,50 +20,76 @@ delete_stack() {
     fi
 }
 
-# Function to completely clean and delete S3 bucket
+# Enhanced function to clean and delete S3 bucket with error handling
 clean_and_delete_bucket() {
     local bucket_name=$1
     echo "Cleaning S3 bucket $bucket_name..."
     
-    # Check if bucket exists
     if aws s3api head-bucket --bucket $bucket_name 2>/dev/null; then
-        # Remove all versions and delete markers
-        echo "Removing all versions and delete markers..."
+        echo "Processing bucket: $bucket_name"
+        
+        # Disable bucket versioning first
+        aws s3api put-bucket-versioning \
+            --bucket $bucket_name \
+            --versioning-configuration Status=Suspended
+
+        # Remove all versions
         versions=$(aws s3api list-object-versions \
             --bucket $bucket_name \
-            --output=json \
-            --query='{Objects: Versions[].{Key:Key,VersionId:VersionId}}' 2>/dev/null)
+            --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' \
+            --output json 2>/dev/null)
         
-        if [ ! -z "$versions" ] && [ "$versions" != "null" ]; then
+        if [ ! -z "$versions" ] && [ "$versions" != "null" ] && [ "$versions" != "{}" ]; then
             echo "$versions" | aws s3api delete-objects \
                 --bucket $bucket_name \
                 --delete "$(echo $versions)" >/dev/null 2>&1
         fi
 
         # Remove all delete markers
-        delete_markers=$(aws s3api list-object-versions \
+        markers=$(aws s3api list-object-versions \
             --bucket $bucket_name \
-            --output=json \
-            --query='{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' 2>/dev/null)
+            --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' \
+            --output json 2>/dev/null)
         
-        if [ ! -z "$delete_markers" ] && [ "$delete_markers" != "null" ]; then
-            echo "$delete_markers" | aws s3api delete-objects \
+        if [ ! -z "$markers" ] && [ "$markers" != "null" ] && [ "$markers" != "{}" ]; then
+            echo "$markers" | aws s3api delete-objects \
                 --bucket $bucket_name \
-                --delete "$(echo $delete_markers)" >/dev/null 2>&1
+                --delete "$(echo $markers)" >/dev/null 2>&1
         fi
 
         # Remove remaining objects
-        echo "Removing remaining objects..."
         aws s3 rm s3://$bucket_name --recursive
 
         # Delete the bucket
-        echo "Deleting bucket..."
-        aws s3api delete-bucket --bucket $bucket_name
-
-        echo "Bucket $bucket_name cleaned and deleted successfully"
+        if aws s3api delete-bucket --bucket $bucket_name; then
+            echo "Successfully deleted bucket: $bucket_name"
+        else
+            echo "Failed to delete bucket: $bucket_name"
+        fi
     else
-        echo "Bucket $bucket_name does not exist, skipping..."
+        echo "Bucket $bucket_name does not exist or access denied"
     fi
+}
+
+# Function to clean all pipeline artifact buckets
+clean_all_pipeline_buckets() {
+    echo "Identifying all pipeline artifact buckets..."
+    
+    # List all buckets matching the pattern
+    buckets=$(aws s3api list-buckets --query "Buckets[?starts_with(Name, 'cicdstack-pipelineartifactsbucket-')].Name" --output text)
+    
+    if [ -z "$buckets" ]; then
+        echo "No pipeline artifact buckets found"
+        return 0
+    fi
+    
+    echo "Found the following buckets to clean:"
+    echo "$buckets"
+    
+    for bucket in $buckets; do
+        echo "Processing bucket: $bucket"
+        clean_and_delete_bucket "$bucket"
+    done
 }
 
 # Main deletion sequence
@@ -86,7 +110,9 @@ delete_stack "ComputeStack"
 # 5. Delete Database Stack
 delete_stack "DatabaseStack"
 
-# 6. Clean and delete Storage Stack
+# 6. Clean and delete all pipeline artifact buckets
+echo "Cleaning all pipeline artifact buckets..."
+clean_all_pipeline_buckets
 clean_and_delete_bucket "043309321272-us-east-1-pipeline-artifacts"
 delete_stack "StorageStack"
 
@@ -104,3 +130,12 @@ for stack in "CICDStack" "SecurityIAMStack" "MonitoringStack" "ComputeStack" "Da
         echo "$stack: Still exists ✗"
     fi
 done
+
+# Verify no pipeline buckets remain
+remaining_buckets=$(aws s3api list-buckets --query "Buckets[?starts_with(Name, 'cicdstack-pipelineartifactsbucket-')].Name" --output text)
+if [ -z "$remaining_buckets" ]; then
+    echo "All pipeline buckets successfully deleted ✓"
+else
+    echo "Warning: Some pipeline buckets still exist ✗"
+    echo "$remaining_buckets"
+fi
