@@ -7,27 +7,32 @@ phases:
   
   build:
     commands:
-      - echo "Creating deployment package..."
-      # Criar diretório temporário para o deployment
-      - mkdir -p deployment
+      - echo "Creating deployment package with correct directory structure..."
       
-      # Copiar arquivos da aplicação
-      - cp -r app/* deployment/
+      # Criar estrutura de diretórios limpa
+      - mkdir -p deployment/app
+      - mkdir -p deployment/scripts
+      
+      # Copiar arquivos da aplicação para dentro da pasta app/
+      - cp app.py deployment/app/
+      - cp requirements.txt deployment/app/
+      
+      # Se existir a pasta config, copiá-la também
+      - if [ -d "config" ]; then cp -r config deployment/app/; fi
       
       # Copiar scripts de deployment
-      - mkdir -p deployment/scripts
       - cp infrastructure/scripts/* deployment/scripts/
       
-      # Copiar appspec.yml para o diretório raiz do deployment
-      - cp infrastructure/pipeline/appspec.yml deployment/appspec.yml
+      # Copiar appspec.yml ajustado para a raiz
+      - cp infrastructure/pipeline/appspec.yml deployment/
       
-      # Criar o arquivo zip a partir do diretório de deployment
+      # Criar o pacote de deployment
       - cd deployment
       - zip -r ../deployment.zip .
       - cd ..
       
-      # Verificar conteúdo do arquivo zip
-      - echo "Deployment archive contents:"
+      # Verificar conteúdo para garantir estrutura correta
+      - echo "Verificando conteúdo do arquivo de deployment:"
       - unzip -l deployment.zip
 
 artifacts:
