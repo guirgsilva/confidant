@@ -8,19 +8,19 @@ phases:
     commands:
       - echo "Creating deployment package..."
       # Criar estrutura temporária para app e scripts
-      - mkdir -p build
-      - mkdir -p build/app
-      - mkdir -p build/scripts
+      - mkdir -p confidant
+      - mkdir -p confidant/app
+      - mkdir -p confidant/scripts
       
       # Copiar arquivos da aplicação
-      - cp -r app/* build/app/
-      - cp -r infrastructure/scripts/* build/scripts/
+      - cp -r app/* confidant/app/
+      - cp -r infrastructure/scripts/* confidant/scripts/
       
       # Copiar appspec.yml FORA da pasta build
       - cp infrastructure/pipeline/appspec.yml appspec.yml
       
       # Criar o zip com o conteúdo de build primeiro
-      - cd build
+      - cd confidant
       - zip -r ../deployment-archive.zip .
       - cd ..
       
