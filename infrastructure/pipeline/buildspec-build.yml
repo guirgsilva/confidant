@@ -1,5 +1,4 @@
 version: 0.2
-
 phases:
   install:
     runtime-versions:
@@ -7,33 +6,40 @@ phases:
   
   build:
     commands:
-      - echo "Creating deployment package..."
-      # Limpar diretório temporário
+      - echo "Creating deployment package with proper directory structure..."
+      
+      # Primeiro, preparamos um ambiente limpo para trabalhar
       - rm -rf deployment_temp
       - mkdir -p deployment_temp/app
       - mkdir -p deployment_temp/scripts
       
-      # Copiar arquivos da aplicação
+      # Copiamos os arquivos da aplicação de duas maneiras para garantir que nada seja perdido
+      # Método 1: Cópia específica para garantir arquivos essenciais
+      - cp app/app.py deployment_temp/app/
+      - cp app/requirements.txt deployment_temp/app/
+      - cp -r app/config deployment_temp/app/
+      
+      # Método 2: Cópia geral para pegar qualquer arquivo adicional
       - cp -r app/* deployment_temp/app/
       
-      # Copiar scripts e garantir permissões
+      # Preparamos os scripts com as permissões corretas
       - cp infrastructure/scripts/*.sh deployment_temp/scripts/
       - chmod +x deployment_temp/scripts/*.sh
       
-      # Copiar appspec.yml
+      # Copiamos o appspec.yml para a raiz, crucial para o CodeDeploy
       - cp infrastructure/pipeline/appspec.yml deployment_temp/
       
-      # Debug: mostrar estrutura antes de zipar
+      # Verificamos a estrutura antes de criar o zip para debug
       - echo "Directory structure before zip:"
       - tree deployment_temp || ls -R deployment_temp
       
-      # Criar o zip na estrutura correta
+      # Criamos o arquivo zip mantendo a estrutura de diretórios
       - cd deployment_temp
       - zip -r ../deployment.zip .
       - cd ..
       
-      # Verificar conteúdo do zip
-      - echo "Zip contents:"
+      # Verificamos o conteúdo final do zip
+      - echo "Verifying deployment package contents:"
       - unzip -l deployment.zip
 
 artifacts:
