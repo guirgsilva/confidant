@@ -14,11 +14,12 @@ phases:
       - mkdir -p deployment/scripts
       
       # Copiar arquivos da aplicação para dentro da pasta app/
-      - cp app.py deployment/app/
-      - cp requirements.txt deployment/app/
+      # Note a mudança nos caminhos de origem para app/
+      - cp app/app.py deployment/app/
+      - cp app/requirements.txt deployment/app/
       
       # Se existir a pasta config, copiá-la também
-      - if [ -d "config" ]; then cp -r config deployment/app/; fi
+      - if [ -d "app/config" ]; then cp -r app/config deployment/app/; fi
       
       # Copiar scripts de deployment
       - cp infrastructure/scripts/* deployment/scripts/
