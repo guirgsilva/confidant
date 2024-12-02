@@ -7,28 +7,31 @@ phases:
   
   build:
     commands:
-      - echo "Creating deployment package..."
+      - echo "Preparing deployment package..."
       
-      # Criar estrutura limpa
+      # Create a clean working directory
       - rm -rf deployment deployment.zip
-      - mkdir -p deployment
       
-      # Copiar arquivos para a estrutura correta
-      - cp -r app deployment/
-      - mkdir -p deployment/scripts
-      - cp infrastructure/scripts/*.sh deployment/scripts/
-      - cp infrastructure/pipeline/appspec.yml deployment/appspec.yml
+      # First, copy appspec.yml to the current directory
+      - cp infrastructure/pipeline/appspec.yml ./appspec.yml
       
-      # Criar o zip a partir do diretório correto
-      - cd deployment
-      - zip -r ../deployment.zip .
-      - cd ..
+      # Create the application structure
+      - mkdir -p app
+      - mkdir -p scripts
       
-      # Verificação crítica
-      - echo "Verificando estrutura do deployment:"
+      # Copy files maintaining the structure specified in appspec.yml
+      - cp -r app/* app/
+      - cp infrastructure/scripts/*.sh scripts/
+      - chmod +x scripts/*.sh
+      
+      # Create the deployment package
+      - zip -r deployment.zip appspec.yml app/ scripts/
+      
+      # Verify the package structure
+      - echo "Verifying deployment package contents:"
       - unzip -l deployment.zip
-      - echo "Verificando localização do appspec.yml:"
-      - unzip -l deployment.zip | grep appspec.yml
+      - echo "Checking appspec.yml location:"
+      - unzip -t deployment.zip appspec.yml
 
 artifacts:
   files:
