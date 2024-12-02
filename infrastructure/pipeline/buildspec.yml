@@ -5,10 +5,12 @@ phases:
     runtime-versions:
       python: 3.8
     commands:
+      # Instalação de dependências do sistema
       - echo "Installing system dependencies..."
       - yum update -y
       - yum install -y python3-devel gcc xmlsec1-devel xmlsec1-openssl-devel libtool-ltdl-devel
       
+      # Instalação de dependências Python
       - echo "Installing Python dependencies..."
       - pip install --upgrade pip
       - pip install pytest flask requests
@@ -19,11 +21,18 @@ phases:
       - grep -v -E "gevent|urllib3|boto3|botocore|xmlsec" app/requirements.txt > filtered_requirements.txt
       - pip install -r filtered_requirements.txt
 
+  build:
+    commands:
+      # Verificação da instalação
+      - echo "Verifying installed dependencies..."
+      - python3 -m pip freeze
+
 artifacts:
   files:
+    # Passamos apenas os arquivos da aplicação
+    # O buildspec-build.yml será responsável pela estrutura final
     - app/**/*
-    - infrastructure/pipeline/appspec.yml
-    - infrastructure/scripts/**/*
+    - infrastructure/**/*
   base-directory: '.'
 
 cache:

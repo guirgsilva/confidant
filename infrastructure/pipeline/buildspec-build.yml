@@ -9,31 +9,26 @@ phases:
     commands:
       - echo "Creating deployment package..."
       
-      # Limpar qualquer arquivo temporário anterior
-      - rm -rf deployment_temp deployment.zip
+      # Criar estrutura limpa
+      - rm -rf deployment deployment.zip
+      - mkdir -p deployment
       
-      # Criar diretórios temporários
-      - mkdir -p deployment_temp/app
-      - mkdir -p deployment_temp/scripts
+      # Copiar arquivos para a estrutura correta
+      - cp -r app deployment/
+      - mkdir -p deployment/scripts
+      - cp infrastructure/scripts/*.sh deployment/scripts/
+      - cp infrastructure/pipeline/appspec.yml deployment/appspec.yml
       
-      # Copiar os arquivos para a estrutura temporária
-      - cp -r app/* deployment_temp/app/
-      - cp infrastructure/scripts/*.sh deployment_temp/scripts/
-      - cp infrastructure/pipeline/appspec.yml deployment_temp/
-      
-      # IMPORTANTE: Entrar no diretório temporário para criar o zip
-      - cd deployment_temp
-      
-      # Criar o zip A PARTIR DESTE DIRETÓRIO
-      # Isso faz com que os arquivos fiquem na raiz do zip
+      # Criar o zip a partir do diretório correto
+      - cd deployment
       - zip -r ../deployment.zip .
-      
-      # Voltar ao diretório original
       - cd ..
       
-      # Verificar a estrutura do zip
-      - echo "Verification of zip contents:"
+      # Verificação crítica
+      - echo "Verificando estrutura do deployment:"
       - unzip -l deployment.zip
+      - echo "Verificando localização do appspec.yml:"
+      - unzip -l deployment.zip | grep appspec.yml
 
 artifacts:
   files:
