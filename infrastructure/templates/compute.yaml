@@ -164,7 +164,7 @@ Resources:
       Scheme: internet-facing
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
-          Value: '60'
+          Value: '300'
 
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
