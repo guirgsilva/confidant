@@ -1,10 +1,16 @@
 version: 0.0
 os: linux
 files:
-  - source: /app
-    destination: /opt/confidant/app
+  - source: /
+    destination: /opt/confidant
+    overwrite: true
+    exclude:
+      - appspec.yml
+      - scripts/**
+
   - source: /scripts
     destination: /opt/confidant/scripts
+    overwrite: true
 
 permissions:
   - object: /opt/confidant
@@ -15,8 +21,9 @@ permissions:
     type:
       - file
       - directory
+      
   - object: /opt/confidant/scripts
-    pattern: "**"
+    pattern: "*.sh"
     owner: root
     group: root
     mode: 755
