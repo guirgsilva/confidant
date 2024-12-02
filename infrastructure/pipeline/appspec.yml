@@ -1,9 +1,10 @@
 version: 0.0
 os: linux
 files:
-  - source: /
-    destination: /opt/confidant/
-    overwrite: true
+  - source: deployment_temp/app
+    destination: /opt/confidant/app
+  - source: deployment_temp/scripts
+    destination: /opt/confidant/scripts
 
 permissions:
   - object: /opt/confidant
@@ -13,13 +14,6 @@ permissions:
     mode: 755
     type:
       - directory
-      - file
-  - object: /opt/confidant/scripts
-    pattern: "*.sh"
-    owner: root
-    group: root
-    mode: 755
-    type:
       - file
 
 hooks:

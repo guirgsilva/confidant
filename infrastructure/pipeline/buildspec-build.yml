@@ -1,4 +1,5 @@
 version: 0.2
+
 phases:
   install:
     runtime-versions:
@@ -6,41 +7,34 @@ phases:
   
   build:
     commands:
-      - echo "Creating deployment package with proper directory structure..."
+      - echo "Creating deployment package..."
       
-      # Primeiro, preparamos um ambiente limpo para trabalhar
+      # Criar diretório temporário completamente limpo
       - rm -rf deployment_temp
+      - mkdir deployment_temp
+      
+      # IMPORTANTE: Primeiro copiamos o appspec.yml para a raiz
+      - cp infrastructure/pipeline/appspec.yml appspec.yml
+      
+      # Criar estrutura de diretórios para os arquivos da aplicação
       - mkdir -p deployment_temp/app
       - mkdir -p deployment_temp/scripts
       
-      # Copiamos os arquivos da aplicação de duas maneiras para garantir que nada seja perdido
-      # Método 1: Cópia específica para garantir arquivos essenciais
-      - cp app/app.py deployment_temp/app/
-      - cp app/requirements.txt deployment_temp/app/
-      - cp -r app/config deployment_temp/app/
-      
-      # Método 2: Cópia geral para pegar qualquer arquivo adicional
+      # Copiar arquivos da aplicação
       - cp -r app/* deployment_temp/app/
       
-      # Preparamos os scripts com as permissões corretas
+      # Copiar scripts
       - cp infrastructure/scripts/*.sh deployment_temp/scripts/
       - chmod +x deployment_temp/scripts/*.sh
       
-      # Copiamos o appspec.yml para a raiz, crucial para o CodeDeploy
-      - cp infrastructure/pipeline/appspec.yml deployment_temp/
+      # Criar o zip incluindo o appspec.yml na raiz
+      - zip -r deployment.zip appspec.yml deployment_temp/*
       
-      # Verificamos a estrutura antes de criar o zip para debug
-      - echo "Directory structure before zip:"
-      - tree deployment_temp || ls -R deployment_temp
-      
-      # Criamos o arquivo zip mantendo a estrutura de diretórios
-      - cd deployment_temp
-      - zip -r ../deployment.zip .
-      - cd ..
-      
-      # Verificamos o conteúdo final do zip
-      - echo "Verifying deployment package contents:"
+      # Verificar a estrutura do zip - crucial para debug
+      - echo "Verifying zip contents:"
       - unzip -l deployment.zip
+      - echo "appspec.yml should be at root level:"
+      - unzip -l deployment.zip | grep appspec.yml
 
 artifacts:
   files:
