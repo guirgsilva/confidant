@@ -8,25 +8,25 @@ phases:
   build:
     commands:
       - echo "Creating deployment package..."
-      - mkdir -p build
+      # Criar diretório temporário para o deployment
+      - mkdir -p deployment
       
       # Copiar arquivos da aplicação
-      - cp -r app/* build/
+      - cp -r app/* deployment/
       
       # Copiar scripts de deployment
-      - mkdir -p build/scripts
-      - cp infrastructure/scripts/* build/scripts/
+      - mkdir -p deployment/scripts
+      - cp infrastructure/scripts/* deployment/scripts/
       
-      # Copiar appspec.yml para a raiz
-      - cp infrastructure/pipeline/appspec.yml appspec.yml
+      # Copiar appspec.yml para o diretório raiz do deployment
+      - cp infrastructure/pipeline/appspec.yml deployment/appspec.yml
       
-      # Criar o pacote de deployment
-      - cd build
+      # Criar o arquivo zip a partir do diretório de deployment
+      - cd deployment
       - zip -r ../deployment.zip .
       - cd ..
-      - zip -g deployment.zip appspec.yml
       
-      # Verificar conteúdo
+      # Verificar conteúdo do arquivo zip
       - echo "Deployment archive contents:"
       - unzip -l deployment.zip
 
