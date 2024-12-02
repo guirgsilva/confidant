@@ -1,10 +1,19 @@
 #!/bin/bash
 set -e
 
-# Habilitar logs detalhados
-exec 1> >(tee /var/log/before_install.log) 2>&1
+# Criar diretório de logs se não existir
+sudo mkdir -p /opt/confidant/logs
+sudo chown ec2-user:ec2-user /opt/confidant/logs
+
+# Redirecionar logs para um arquivo que podemos acessar
+exec 1> >(tee /opt/confidant/logs/before_install.log) 2>&1
 
 echo "Starting BeforeInstall script..."
+echo "Checking deployment archive directory..."
+ls -la /opt/codedeploy-agent/deployment-root/*/d-*/deployment-archive/
+
+echo "Current directory structure:"
+ls -la /opt/confidant/ || echo "Confidant directory does not exist yet"
 
 # Atualizar o sistema
 echo "Updating system packages..."
