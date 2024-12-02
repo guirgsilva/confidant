@@ -4,34 +4,33 @@ phases:
   install:
     runtime-versions:
       python: 3.8
+  
   build:
     commands:
       - echo "Creating deployment package..."
-      # Criar estrutura temporária para app e scripts
-      - mkdir -p confidant
-      - mkdir -p confidant/app
-      - mkdir -p confidant/scripts
+      - mkdir -p build
       
       # Copiar arquivos da aplicação
-      - cp -r app/* confidant/app/
-      - cp -r infrastructure/scripts/* confidant/scripts/
+      - cp -r app/* build/
       
-      # Copiar appspec.yml FORA da pasta build
+      # Copiar scripts de deployment
+      - mkdir -p build/scripts
+      - cp infrastructure/scripts/* build/scripts/
+      
+      # Copiar appspec.yml para a raiz
       - cp infrastructure/pipeline/appspec.yml appspec.yml
       
-      # Criar o zip com o conteúdo de build primeiro
-      - cd confidant
-      - zip -r ../deployment-archive.zip .
+      # Criar o pacote de deployment
+      - cd build
+      - zip -r ../deployment.zip .
       - cd ..
+      - zip -g deployment.zip appspec.yml
       
-      # Adicionar appspec.yml na raiz do zip
-      - zip -g deployment-archive.zip appspec.yml
-      
-      # Verificar o conteúdo do zip
+      # Verificar conteúdo
       - echo "Deployment archive contents:"
-      - unzip -l deployment-archive.zip
-      
+      - unzip -l deployment.zip
+
 artifacts:
   files:
-    - deployment-archive.zip
+    - deployment.zip
   discard-paths: no
