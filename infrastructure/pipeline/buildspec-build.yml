@@ -9,29 +9,32 @@ phases:
     commands:
       - echo "Preparing deployment package..."
       
-      # Create a clean working directory
-      - rm -rf deployment deployment.zip
+      # Create a clean working directory for our deployment
+      - rm -rf deployment-package
+      - mkdir -p deployment-package
       
-      # First, copy appspec.yml to the current directory
-      - cp infrastructure/pipeline/appspec.yml ./appspec.yml
+      # First, copy appspec.yml to our deployment package root
+      - cp infrastructure/pipeline/appspec.yml deployment-package/
       
-      # Create the application structure
-      - mkdir -p app
-      - mkdir -p scripts
+      # Create the directory structure in our package
+      - mkdir -p deployment-package/app
+      - mkdir -p deployment-package/scripts
       
-      # Copy files maintaining the structure specified in appspec.yml
-      - cp -r app/* app/
-      - cp infrastructure/scripts/*.sh scripts/
-      - chmod +x scripts/*.sh
+      # Copy application files - note how we're copying FROM app TO deployment-package/app
+      - cp -r app/* deployment-package/app/
       
-      # Create the deployment package
-      - zip -r deployment.zip appspec.yml app/ scripts/
+      # Copy deployment scripts
+      - cp infrastructure/scripts/*.sh deployment-package/scripts/
+      - chmod +x deployment-package/scripts/*.sh
       
-      # Verify the package structure
-      - echo "Verifying deployment package contents:"
+      # Create the deployment package from our prepared directory
+      - cd deployment-package
+      - zip -r ../deployment.zip .
+      - cd ..
+      
+      # Verify the package contents
+      - echo "Verifying deployment package structure:"
       - unzip -l deployment.zip
-      - echo "Checking appspec.yml location:"
-      - unzip -t deployment.zip appspec.yml
 
 artifacts:
   files:
