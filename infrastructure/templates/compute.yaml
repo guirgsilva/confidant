@@ -115,25 +115,28 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-            
+
             echo "Starting user data script execution..."
-            
+
             # Update system
-            yum update -y
-            
+            sudo yum update -y
+
             # Install CodeDeploy Agent
-            yum install -y ruby wget
-            
+            sudo yum install -y ruby wget
+
             # Download and install CodeDeploy agent
             cd /home/ec2-user
             wget https://aws-codedeploy-${AWS::Region}.s3.amazonaws.com/latest/install
-            chmod +x ./install
-            ./install auto
-            
+            sudo chmod +x ./install
+
+            # Install CodeDeploy agent with environment variable set
+            export TMPDIR=/tmp
+            sudo ./install auto || { echo "CodeDeploy installation failed"; exit 1; }
+
             # Start and enable CodeDeploy agent
-            systemctl enable codedeploy-agent
-            systemctl start codedeploy-agent
-            
+            sudo systemctl enable codedeploy-agent
+            sudo systemctl start codedeploy-agent
+
             # Verify agent is running
             if systemctl is-active --quiet codedeploy-agent; then
                 echo "CodeDeploy agent is running successfully"
@@ -141,15 +144,15 @@ Resources:
                 echo "Failed to start CodeDeploy agent"
                 exit 1
             fi
-            
+
             # Install application dependencies
-            yum install -y python3-pip python3-devel gcc
-            
+            sudo yum install -y python3-pip python3-devel gcc
+
             # Create application directory with correct permissions
             mkdir -p /opt/confidant
-            chown ec2-user:ec2-user /opt/confidant
-            chmod 755 /opt/confidant
-            
+            sudo chown ec2-user:ec2-user /opt/confidant
+            sudo chmod 755 /opt/confidant
+
             echo "User data script completed successfully"
 
   ApplicationLoadBalancer:
