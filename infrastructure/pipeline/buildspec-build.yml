@@ -9,30 +9,33 @@ phases:
     commands:
       - echo "Preparing deployment package..."
       
-      # Create a clean working directory for our deployment
+      # Limpeza do ZIP existente
+      - rm -f deployment.zip  # Remove qualquer ZIP existente no diretório atual
+      
+      # Criação do diretório de trabalho
       - rm -rf deployment-package
       - mkdir -p deployment-package
       
-      # First, copy appspec.yml to our deployment package root
+      # Copiar appspec.yml para a raiz do pacote
       - cp infrastructure/pipeline/appspec.yml deployment-package/
       
-      # Create the directory structure in our package
+      # Criar a estrutura de diretórios no pacote
       - mkdir -p deployment-package/app
       - mkdir -p deployment-package/scripts
       
-      # Copy application files - note how we're copying FROM app TO deployment-package/app
+      # Copiar arquivos da aplicação
       - cp -r app/* deployment-package/app/
       
-      # Copy deployment scripts
+      # Copiar scripts de implantação
       - cp infrastructure/scripts/*.sh deployment-package/scripts/
       - chmod +x deployment-package/scripts/*.sh
       
-      # Create the deployment package from our prepared directory
+      # Criar o arquivo ZIP a partir do diretório de trabalho
       - cd deployment-package
-      - zip -r ../deployment.zip .
+      - zip -r ../deployment.zip .  # Cria o ZIP no diretório anterior
       - cd ..
       
-      # Verify the package contents
+      # Verificar a estrutura do pacote
       - echo "Verifying deployment package structure:"
       - unzip -l deployment.zip
 
